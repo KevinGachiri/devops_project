@@ -1,0 +1,59 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    container_name: ecommerce-app
+    environment:
+      - PORT=3000
+    ports:
+      # Map container port 3000 to host port 5000
+      - "5000:3000"
+    depends_on:
+      - db
+    networks:
+      - backend
+
+  db:
+    image: postgres:14
+    container_name: ecommerce-db
+    environment:
+      - POSTGRES_USER=appuser
+      - POSTGRES_PASSWORD=apppassword
+      - POSTGRES_DB=appdb
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      # Map Grafana’s default port 3000 to host port 3001 to avoid conflict with the app
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - backend
+
+volumes:
+  db_data:
+
+networks:
+  backend:
+    driver: bridge
