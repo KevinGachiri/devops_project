@@ -24,22 +24,22 @@ jobs:
       - name: Run unit tests
         run: npm test
 
-      # Build Docker image without pushing (cache for later jobs)
+      # Build Docker image locally (not pushed yet)
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: false
-          tags: ${{ github.repository }}:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-app:latest
 
       # Scan the built image using Trivy
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ github.repository }}:latest
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-app:latest
           scan-type: 'image'
           format: 'table'
-          exit-code: '0'
+          exit-code: '0' # don’t fail pipeline yet, even if vulnerabilities are found
           vuln-type: 'os,library'
 
   push-image:
@@ -64,32 +64,28 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-app:latest
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-app:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-app:sha-${{ github.sha }}
 
-  deploy:
-    needs: push-image
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Install SSH key
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy latest image to EC2
-        env:
-          EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_INSTANCE_IP: ${{ secrets.EC2_INSTANCE_IP }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: |
-          ssh -o StrictHostKeyChecking=no "$EC2_USER@$EC2_INSTANCE_IP" << 'EOF'
-          sudo docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
-          sudo docker pull "$DOCKERHUB_USERNAME"/ecommerce-app:latest
-          sudo docker stop ecommerce-app || true
-          sudo docker rm ecommerce-app || true
-          sudo docker run -d --name ecommerce-app -p 80:3000 "$DOCKERHUB_USERNAME"/ecommerce-app:latest
-          EOF
+  # Temporarily disable until EC2 is provisioned
+  # deploy:
+  #   needs: push-image
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v3
+  #     - name: Install SSH key
+  #       uses: webfactory/ssh-agent@v0.8.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #     - name: Deploy latest image to EC2
+  #       run: |
+  #         ssh -o StrictHostKeyChecking=no "$EC2_USER@$EC2_INSTANCE_IP" << 'EOF'
+  #         sudo docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
+  #         sudo docker pull "$DOCKERHUB_USERNAME"/ecommerce-app:latest
+  #         sudo docker stop ecommerce-app || true
+  #         sudo docker rm ecommerce-app || true
+  #         sudo docker run -d --name ecommerce-app -p 80:3000 "$DOCKERHUB_USERNAME"/ecommerce-app:latest
+  #         EOF
