@@ -184,3 +184,4 @@ provisioned via Terraform.  The CI/CD pipeline builds and scans the Docker
 image, pushes it to Docker Hub and deploys it to EC2.  Prometheus scrapes
 metrics from the API and Grafana visualises them.  Trivy scans the Docker
 image for vulnerabilities during the CI phase.
+retry build
