@@ -185,3 +185,4 @@ image, pushes it to Docker Hub and deploys it to EC2.  Prometheus scrapes
 metrics from the API and Grafana visualises them.  Trivy scans the Docker
 image for vulnerabilities during the CI phase.
 retry build
+Triggering deploy at Sat Sep 20 13:10:53 EAT 2025
