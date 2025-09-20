@@ -114,6 +114,16 @@ jobs:
           echo "--- Checking running containers ---"
           sudo docker ps --filter "name=ecommerce-app"
 
-          echo "--- Verifying app with curl ---"
-          curl -s http://localhost:3000 || true
+          echo "--- Waiting for app to become healthy ---"
+          for i in {1..6}; do
+            if curl -s http://localhost:3000 | grep -q "Welcome"; then
+              echo "App is healthy ✅"
+              exit 0
+            fi
+            echo "Waiting... (\$i/6)"
+            sleep 5
+          done
+
+          echo "App did not respond in time ❌"
+          exit 1
           EOF
