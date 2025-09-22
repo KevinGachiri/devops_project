@@ -111,7 +111,7 @@ jobs:
 
             echo "--- Health check ---"
             for i in {1..12}; do
-              if curl -s http://localhost:3000 | grep -q "Welcome"; then
+              if curl -s http://localhost | grep -q "Welcome"; then
                 echo "App is healthy ✅"
                 exit 0
               fi
