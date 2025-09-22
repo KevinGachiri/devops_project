@@ -84,6 +84,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+
+      - name: Initialize Terraform
+        run: terraform init
+        working-directory: terraform
+
+      - name: Get EC2 IP from Terraform outputs
+        id: tf-output
+        run: |
+          cd terraform
+          echo "ip=$(terraform output -raw instance_ip)" >> $GITHUB_OUTPUT
+
       - name: Install SSH key
         uses: webfactory/ssh-agent@v0.8.0
         with:
@@ -92,7 +107,7 @@ jobs:
       - name: Deploy latest image to EC2
         env:
           EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_INSTANCE_IP: ${{ secrets.EC2_INSTANCE_IP }}
+          EC2_INSTANCE_IP: ${{ steps.tf-output.outputs.ip }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
@@ -104,28 +119,21 @@ jobs:
             echo "--- Pulling latest image ---"
             sudo docker pull $IMAGE
 
-            echo "--- Stopping old container ---"
+            echo "--- Restarting container ---"
             sudo docker stop ecommerce-app || true
             sudo docker rm ecommerce-app || true
-
-            echo "--- Starting new container ---"
             sudo docker run -d --name ecommerce-app -p 80:3000 $IMAGE
 
-            echo "--- Checking running containers ---"
-            sudo docker ps --filter "name=ecommerce-app"
-
-            echo "--- Waiting for app to become healthy ---"
+            echo "--- Health check ---"
             for i in {1..12}; do
-              if curl -s http://localhost | grep -q "Welcome"; then
+              if curl -s http://localhost:3000 | grep -q "Welcome"; then
                 echo "App is healthy ✅"
                 exit 0
               fi
               echo "Waiting... (\$i/12)"
               sleep 5
             done
-
-            echo "App did not respond in time ❌"
+            echo "App failed ❌"
             sudo docker logs ecommerce-app
             exit 1
           EOF
-          
