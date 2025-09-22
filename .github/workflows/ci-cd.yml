@@ -84,22 +84,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.5.7
-
-      - name: Initialize Terraform
-        run: terraform init
-        working-directory: terraform
-
-      - name: Get EC2 IP from Terraform outputs
-        id: tf-output
-        run: |
-          cd terraform
-          ip=$(terraform output -raw instance_ip)
-          echo "ec2_ip=$ip" >> $GITHUB_OUTPUT
-        
       - name: Install SSH key
         uses: webfactory/ssh-agent@v0.8.0
         with:
@@ -108,7 +92,7 @@ jobs:
       - name: Deploy latest image to EC2
         env:
           EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_INSTANCE_IP: ${{ steps.tf-output.outputs.ec2_ip }}
+          EC2_INSTANCE_IP: ${{ secrets.EC2_INSTANCE_IP }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
