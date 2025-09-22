@@ -98,32 +98,34 @@ jobs:
         run: |
           IMAGE="${DOCKERHUB_USERNAME}/ecommerce-app:latest"
           ssh -o StrictHostKeyChecking=no "$EC2_USER@$EC2_INSTANCE_IP" << EOF
-          echo "--- Logging in to Docker Hub ---"
-          sudo docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
+            echo "--- Logging in to Docker Hub ---"
+            sudo docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_TOKEN"
 
-          echo "--- Pulling latest image ---"
-          sudo docker pull $IMAGE
+            echo "--- Pulling latest image ---"
+            sudo docker pull $IMAGE
 
-          echo "--- Stopping old container ---"
-          sudo docker stop ecommerce-app || true
-          sudo docker rm ecommerce-app || true
+            echo "--- Stopping old container ---"
+            sudo docker stop ecommerce-app || true
+            sudo docker rm ecommerce-app || true
 
-          echo "--- Starting new container ---"
-          sudo docker run -d --name ecommerce-app -p 80:3000 $IMAGE
+            echo "--- Starting new container ---"
+            sudo docker run -d --name ecommerce-app -p 80:3000 $IMAGE
 
-          echo "--- Checking running containers ---"
-          sudo docker ps --filter "name=ecommerce-app"
+            echo "--- Checking running containers ---"
+            sudo docker ps --filter "name=ecommerce-app"
 
-          echo "--- Waiting for app to become healthy ---"
-          for i in {1..6}; do
-            if curl -s http://localhost:3000 | grep -q "Welcome"; then
-              echo "App is healthy ✅"
-              exit 0
-            fi
-            echo "Waiting... (\$i/6)"
-            sleep 5
-          done
+            echo "--- Waiting for app to become healthy ---"
+            for i in {1..12}; do
+              if curl -s http://localhost | grep -q "Welcome"; then
+                echo "App is healthy ✅"
+                exit 0
+              fi
+              echo "Waiting... (\$i/12)"
+              sleep 5
+            done
 
-          echo "App did not respond in time ❌"
-          exit 1
+            echo "App did not respond in time ❌"
+            sudo docker logs ecommerce-app
+            exit 1
           EOF
+          
