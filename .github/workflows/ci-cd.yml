@@ -97,7 +97,7 @@ jobs:
         id: tf-output
         working-directory: terraform
         run: |
-          ip=$(terraform output -raw instance_ip)
+          ip=$(terraform output -raw instance_ip | tr -d '\n')
           echo "ec2_ip=$ip" >> $GITHUB_OUTPUT
 
       - name: Install SSH key
