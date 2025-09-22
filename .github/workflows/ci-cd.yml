@@ -97,9 +97,9 @@ jobs:
         id: tf-output
         working-directory: terraform
         run: |
-          ip=$(terraform output -raw instance_ip | tr -d '\n')
+          ip=$(terraform output -raw instance_ip | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
           echo "ec2_ip=$ip" >> $GITHUB_OUTPUT
-
+        
       - name: Install SSH key
         uses: webfactory/ssh-agent@v0.8.0
         with:
