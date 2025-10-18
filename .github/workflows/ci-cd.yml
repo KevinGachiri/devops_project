@@ -128,3 +128,18 @@ jobs:
             sudo docker logs ecommerce-app
             exit 1
           EOF
+          
+      - name: Update README with deployment info
+        if: success()
+        run: |
+          echo "### 🚀 Latest Deployment" > DEPLOYMENT_INFO.md
+          echo "" >> DEPLOYMENT_INFO.md
+          echo "**Deployed at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> DEPLOYMENT_INFO.md
+          echo "**App URL:** http://${{ secrets.EC2_INSTANCE_IP }}" >> DEPLOYMENT_INFO.md
+          echo "**Docker Image:** ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-app:latest" >> DEPLOYMENT_INFO.md
+          echo "" >> DEPLOYMENT_INFO.md
+          cat DEPLOYMENT_INFO.md
+
+          git add DEPLOYMENT_INFO.md README.md || true
+          git commit -m "Auto-update deployment info [skip ci]" || echo "No changes to commit"
+          git push origin main
